@@ -1,7 +1,10 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { addDoc, collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import { QRCodeCanvas } from 'qrcode.react';
+
 // @mui
 import {
   Card,
@@ -21,6 +24,9 @@ import {
   IconButton,
   TableContainer,
   TablePagination,
+  Box,
+  Modal,
+  TextField,
 } from '@mui/material';
 // components
 import Label from '../components/label';
@@ -28,17 +34,20 @@ import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 // sections
 import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
-// mock
-import USERLIST from '../_mock/user';
 
+// mock
+// import USERLIST from '../_mock/user';
+import { db } from '../services/FirebaseServices';
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
-  { id: 'name', label: 'Name', alignRight: false },
-  { id: 'company', label: 'Company', alignRight: false },
-  { id: 'role', label: 'Role', alignRight: false },
-  { id: 'isVerified', label: 'Verified', alignRight: false },
-  { id: 'status', label: 'Status', alignRight: false },
+  { id: 'namaLengkap', label: 'Nama Lengkap', alignRight: false },
+  { id: 'jabatan', label: 'Jabatan', alignRight: false },
+  { id: 'alamat', label: 'Alamat', alignRight: false },
+  { id: 'noHp', label: 'Nomor HP', alignRight: false },
+  { id: 'latitude', label: 'Latitude', alignRight: false },
+  { id: 'longitude', label: 'Longitude', alignRight: false },
+  // { id: 'status', label: 'Status', alignRight: false },
   { id: '' },
 ];
 
@@ -68,25 +77,83 @@ function applySortFilter(array, comparator, query) {
     return a[1] - b[1];
   });
   if (query) {
-    return filter(array, (_user) => _user.name.toLowerCase().indexOf(query.toLowerCase()) !== -1);
+    return filter(array, (_user) => _user.namaLengkap.toLowerCase().indexOf(query.toLowerCase()) !== -1);
   }
   return stabilizedThis.map((el) => el[0]);
 }
 
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 600,
+  bgcolor: 'background.paper',
+  border: '2px solid #fff',
+  borderRadius: '8px',
+  boxShadow: 24,
+  p: 3,
+};
+
+const styleView = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 600,
+  bgcolor: 'background.paper',
+  border: '2px solid #fff',
+  borderRadius: '8px',
+  boxShadow: 24,
+  p: 3,
+};
+
 export default function UserPage() {
   const [open, setOpen] = useState(null);
-
   const [page, setPage] = useState(0);
-
   const [order, setOrder] = useState('asc');
-
   const [selected, setSelected] = useState([]);
-
-  const [orderBy, setOrderBy] = useState('name');
-
+  const [orderBy, setOrderBy] = useState('namaLengkap');
   const [filterName, setFilterName] = useState('');
-
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const [openTambahUser, setOpenTambahUser] = useState(false);
+  const [openView, setOpenView] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [val, setVal] = useState({
+    namaLengkap: '',
+    jabatan: '',
+    alamat: '',
+    noHp: '',
+    latitude: '',
+    longitude: '',
+  });
+
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    getData();
+  }, []);
+
+  const getData = async () => {
+    const list = [];
+    let index = 0;
+    const querySnapshot = await getDocs(collection(db, 'users'));
+    querySnapshot.forEach((doc) => {
+      // doc.data() is never undefined for query doc snapshots
+      console.log(doc.id, ' => ', doc.data());
+      list.push({
+        ...doc.data(),
+        id: doc.id,
+        avatarUrl: `/assets/images/avatars/avatar_${index + 1}.jpg`,
+      });
+
+      index += 1;
+    });
+
+    console.log('list', list);
+    setData(list);
+  };
 
   const handleOpenMenu = (event) => {
     setOpen(event.currentTarget);
@@ -94,6 +161,18 @@ export default function UserPage() {
 
   const handleCloseMenu = () => {
     setOpen(null);
+  };
+
+  const onOpenTambahUser = () => {
+    setOpenTambahUser(true);
+  };
+
+  const onCloseTambahUser = () => {
+    setOpenTambahUser(false);
+  };
+
+  const onCloseView = () => {
+    setOpenView(false);
   };
 
   const handleRequestSort = (event, property) => {
@@ -104,7 +183,7 @@ export default function UserPage() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelecteds = USERLIST.map((n) => n.name);
+      const newSelecteds = data.map((n) => n.name);
       setSelected(newSelecteds);
       return;
     }
@@ -140,11 +219,43 @@ export default function UserPage() {
     setFilterName(event.target.value);
   };
 
-  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - USERLIST.length) : 0;
+  const emptyRows = page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
 
-  const filteredUsers = applySortFilter(USERLIST, getComparator(order, orderBy), filterName);
+  const filteredUsers = applySortFilter(data, getComparator(order, orderBy), filterName);
 
   const isNotFound = !filteredUsers.length && !!filterName;
+
+  const onChange = (e) => {
+    const name = e.target.name;
+    const value = e.target.value;
+
+    setVal({
+      ...val,
+      [name]: value,
+    });
+  };
+
+  const onTambahData = async () => {
+    setLoading(true);
+    console.log('val', val);
+    await addDoc(collection(db, 'users'), val);
+    alert('Berhasil tambah data');
+    setLoading(false);
+    onCloseTambahUser();
+  };
+
+  const onView = () => {
+    // alert('onView');
+    setOpenView(true);
+  };
+
+  const onEdit = () => {
+    alert('onEdit');
+  };
+
+  const onDelete = () => {
+    alert('onDelete');
+  };
 
   return (
     <>
@@ -157,7 +268,7 @@ export default function UserPage() {
           <Typography variant="h4" gutterBottom>
             User
           </Typography>
-          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />}>
+          <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={onOpenTambahUser}>
             New User
           </Button>
         </Stack>
@@ -172,40 +283,44 @@ export default function UserPage() {
                   order={order}
                   orderBy={orderBy}
                   headLabel={TABLE_HEAD}
-                  rowCount={USERLIST.length}
+                  rowCount={data.length}
                   numSelected={selected.length}
                   onRequestSort={handleRequestSort}
                   onSelectAllClick={handleSelectAllClick}
                 />
                 <TableBody>
                   {filteredUsers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => {
-                    const { id, name, role, status, company, avatarUrl, isVerified } = row;
-                    const selectedUser = selected.indexOf(name) !== -1;
+                    const { id, avatarUrl, namaLengkap, alamat, jabatan, noHp, latitude, longitude } = row;
+                    const selectedUser = selected.indexOf(namaLengkap) !== -1;
 
                     return (
                       <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
                         <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, name)} />
+                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, namaLengkap)} />
                         </TableCell>
 
                         <TableCell component="th" scope="row" padding="none">
                           <Stack direction="row" alignItems="center" spacing={2}>
-                            <Avatar alt={name} src={avatarUrl} />
+                            <Avatar alt={namaLengkap} src={avatarUrl} />
                             <Typography variant="subtitle2" noWrap>
-                              {name}
+                              {namaLengkap}
                             </Typography>
                           </Stack>
                         </TableCell>
 
-                        <TableCell align="left">{company}</TableCell>
+                        <TableCell align="left">{alamat}</TableCell>
 
-                        <TableCell align="left">{role}</TableCell>
+                        <TableCell align="left">{jabatan}</TableCell>
 
-                        <TableCell align="left">{isVerified ? 'Yes' : 'No'}</TableCell>
+                        <TableCell align="left">{noHp}</TableCell>
 
+                        <TableCell align="left">{latitude}</TableCell>
+
+                        <TableCell align="left">{longitude}</TableCell>
+                        {/* 
                         <TableCell align="left">
                           <Label color={(status === 'banned' && 'error') || 'success'}>{sentenceCase(status)}</Label>
-                        </TableCell>
+                        </TableCell> */}
 
                         <TableCell align="right">
                           <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
@@ -252,7 +367,7 @@ export default function UserPage() {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={USERLIST.length}
+            count={data.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -279,16 +394,98 @@ export default function UserPage() {
           },
         }}
       >
-        <MenuItem>
+        <MenuItem onClick={onView}>
+          <Iconify icon={'eva:external-link-fill'} sx={{ mr: 2 }} />
+          Print
+        </MenuItem>
+
+        <MenuItem onClick={onEdit}>
           <Iconify icon={'eva:edit-fill'} sx={{ mr: 2 }} />
           Edit
         </MenuItem>
 
-        <MenuItem sx={{ color: 'error.main' }}>
+        <MenuItem sx={{ color: 'error.main' }} onClick={onDelete}>
           <Iconify icon={'eva:trash-2-outline'} sx={{ mr: 2 }} />
           Delete
         </MenuItem>
       </Popover>
+
+      {/* Tambah User */}
+      <Modal
+        open={openTambahUser}
+        onClose={onCloseTambahUser}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Tambah Data
+          </Typography>
+          <Box
+            sx={{
+              marginY: 2,
+            }}
+          >
+            <TextField name="namaLengkap" label="Nama Lengkap" fullWidth onChange={onChange} />
+            <TextField sx={{ marginTop: 2 }} name="jabatan" label="Jabatan" fullWidth onChange={onChange} />
+            <TextField
+              multiline
+              rows={2}
+              maxRows={2}
+              sx={{ marginTop: 2 }}
+              name="alamat"
+              label="Alamat"
+              fullWidth
+              onChange={onChange}
+            />
+            <TextField type="number" sx={{ marginTop: 2 }} name="noHp" label="No. Hp" fullWidth onChange={onChange} />
+            <TextField sx={{ marginTop: 2 }} name="latitude" label="latitude" fullWidth onChange={onChange} />
+            <TextField
+              type="number"
+              sx={{ marginTop: 2 }}
+              name="longitude"
+              label="longitude"
+              fullWidth
+              onChange={onChange}
+            />
+          </Box>
+
+          <Button loading={loading} fullWidth size="large" type="submit" variant="contained" onClick={onTambahData}>
+            Tambah
+          </Button>
+        </Box>
+      </Modal>
+
+      <Modal
+        open={openView}
+        onClose={onCloseView}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={styleView} display="flex" justifyContent="center" flexDirection="column" alignItems="center">
+          <Typography id="modal-modal-title" variant="h4" component="h2" sx={{
+            mb: 4
+          }}>
+            View Data
+          </Typography>
+          <QRCodeCanvas
+            value={'https://picturesofpeoplescanningqrcodes.tumblr.com/'}
+            size={128}
+            bgColor={'#ffffff'}
+            fgColor={'#000000'}
+            level={'L'}
+            includeMargin={false}
+            imageSettings={{
+              src: 'https://static.zpao.com/favicon.png',
+              x: undefined,
+              y: undefined,
+              height: 24,
+              width: 24,
+              excavate: true,
+            }}
+          />
+        </Box>
+      </Modal>
     </>
   );
 }
