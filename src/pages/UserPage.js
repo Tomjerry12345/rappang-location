@@ -1,10 +1,11 @@
 import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { addDoc, collection, doc, getDocs, deleteDoc, setDoc } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
 import { LoadingButton } from '@mui/lab';
+import { useReactToPrint } from 'react-to-print';
 // @mui
 import {
   Card,
@@ -134,6 +135,8 @@ export default function UserPage() {
 
   const [selectData, setSelectData] = useState({});
 
+  const ref = useRef();
+
   const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
 
   useEffect(() => {
@@ -158,6 +161,23 @@ export default function UserPage() {
 
     console.log('list', list);
     setData(list);
+  };
+
+  const handlePrint = useReactToPrint({
+    content: () => ref.current,
+  });
+
+  const downloadQRCode = () => {
+    const canvas = document.getElementById("qr-gen");
+    const pngUrl = canvas
+      .toDataURL("image/png")
+      .replace("image/png", "image/octet-stream");
+    const downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `test.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   const handleOpenMenu = (event, row) => {
@@ -241,17 +261,15 @@ export default function UserPage() {
     getData();
     alert('Berhasil tambah data');
     onCloseTambahUser();
-    handleCloseMenu()
+    handleCloseMenu();
   };
 
   const onView = () => {
-    // alert('onView');
     setOpenView(true);
   };
 
   const onEdit = () => {
     setOpenEditUser(true);
-    // alert("onEdit")
   };
 
   const onActionEdit = async () => {
@@ -262,14 +280,14 @@ export default function UserPage() {
     getData();
     alert('Data berhasil Di edit');
     onCloseEditUser();
-    handleCloseMenu()
+    handleCloseMenu();
   };
 
   const onDelete = async () => {
     await deleteDoc(doc(db, 'users', selectData.id));
     alert('Data berhasil Di hapus');
-    getData()
-    handleCloseMenu()
+    getData();
+    handleCloseMenu();
   };
 
   const onOpenTambahUser = () => {
@@ -582,26 +600,32 @@ export default function UserPage() {
           >
             View Data
           </Typography>
-          <QRCodeCanvas
-            value={`${url}/view-data?id=${selectData.id}`}
-            size={128}
-            bgColor={'#ffffff'}
-            fgColor={'#000000'}
-            level={'L'}
-            includeMargin={false}
-            imageSettings={{
-              src: 'https://static.zpao.com/favicon.png',
-              x: undefined,
-              y: undefined,
-              height: 24,
-              width: 24,
-              excavate: true,
-            }}
-            style={{
-              marginBottom: 24,
-            }}
-          />
-          <Button sx={{ mb: 2 }}>Print QRCode</Button>
+          <div ref={ref} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <QRCodeCanvas
+              id="qr-gen"
+              value={`${url}/view-data?id=${selectData.id}`}
+              size={250}
+              // bgColor={'#ffffff'}
+              // fgColor={'#000000'}
+              level={'L'}
+              includeMargin
+              // imageSettings={{
+              //   src: 'https://static.zpao.com/favicon.png',
+              //   x: undefined,
+              //   y: undefined,
+              //   height: 24,
+              //   width: 24,
+              //   excavate: true,
+              // }}
+              style={{
+                marginBottom: 24,
+              }}
+            />
+          </div>
+
+          <Button sx={{ mb: 2 }} onClick={downloadQRCode}>
+            Print QRCode
+          </Button>
           <Box>
             <Typography variant="body1">Nama Lengkap: &nbsp;{selectData.namaLengkap}</Typography>
             <Typography variant="body1">Jabatan: &nbsp;{selectData.jabatan}</Typography>
