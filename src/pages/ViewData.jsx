@@ -33,7 +33,7 @@ const ViewData = () => {
         const long = position.coords.longitude;
 
         console.log(position);
-        
+
         window.location.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
       },
       (error) => {

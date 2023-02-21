@@ -2,9 +2,9 @@ import { Helmet } from 'react-helmet-async';
 import { filter } from 'lodash';
 import { sentenceCase } from 'change-case';
 import { useEffect, useState } from 'react';
-import { addDoc, collection, doc, setDoc, getDocs } from 'firebase/firestore';
+import { addDoc, collection, doc, getDocs, deleteDoc, setDoc } from 'firebase/firestore';
 import { QRCodeCanvas } from 'qrcode.react';
-
+import { LoadingButton } from '@mui/lab';
 // @mui
 import {
   Card,
@@ -12,7 +12,6 @@ import {
   Stack,
   Paper,
   Avatar,
-  Button,
   Popover,
   Checkbox,
   TableRow,
@@ -27,9 +26,9 @@ import {
   Box,
   Modal,
   TextField,
+  Button,
 } from '@mui/material';
 // components
-import Label from '../components/label';
 import Iconify from '../components/iconify';
 import Scrollbar from '../components/scrollbar';
 // sections
@@ -38,6 +37,7 @@ import { UserListHead, UserListToolbar } from '../sections/@dashboard/user';
 // mock
 // import USERLIST from '../_mock/user';
 import { db } from '../services/FirebaseServices';
+
 // ----------------------------------------------------------------------
 
 const TABLE_HEAD = [
@@ -118,6 +118,7 @@ export default function UserPage() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
   const [openTambahUser, setOpenTambahUser] = useState(false);
+  const [openEditUser, setOpenEditUser] = useState(false);
   const [openView, setOpenView] = useState(false);
   const [loading, setLoading] = useState(false);
   const [val, setVal] = useState({
@@ -133,7 +134,7 @@ export default function UserPage() {
 
   const [selectData, setSelectData] = useState({});
 
-  const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+  const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
 
   useEffect(() => {
     getData();
@@ -162,23 +163,14 @@ export default function UserPage() {
   const handleOpenMenu = (event, row) => {
     console.log('row', row);
     setSelectData(row);
+    setVal(row);
     setOpen(event.currentTarget);
   };
 
   const handleCloseMenu = () => {
     setOpen(null);
-  };
-
-  const onOpenTambahUser = () => {
-    setOpenTambahUser(true);
-  };
-
-  const onCloseTambahUser = () => {
-    setOpenTambahUser(false);
-  };
-
-  const onCloseView = () => {
-    setOpenView(false);
+    setSelectData({});
+    setVal({});
   };
 
   const handleRequestSort = (event, property) => {
@@ -245,9 +237,11 @@ export default function UserPage() {
     setLoading(true);
     console.log('val', val);
     await addDoc(collection(db, 'users'), val);
-    alert('Berhasil tambah data');
     setLoading(false);
+    getData();
+    alert('Berhasil tambah data');
     onCloseTambahUser();
+    handleCloseMenu()
   };
 
   const onView = () => {
@@ -256,12 +250,42 @@ export default function UserPage() {
   };
 
   const onEdit = () => {
-   
-    alert("onEdit")
+    setOpenEditUser(true);
+    // alert("onEdit")
   };
 
-  const onDelete = () => {
-    alert('onDelete');
+  const onActionEdit = async () => {
+    setLoading(true);
+    console.log('edit-val', val);
+    await setDoc(doc(db, 'users', selectData.id), val);
+    setLoading(false);
+    getData();
+    alert('Data berhasil Di edit');
+    onCloseEditUser();
+    handleCloseMenu()
+  };
+
+  const onDelete = async () => {
+    await deleteDoc(doc(db, 'users', selectData.id));
+    alert('Data berhasil Di hapus');
+    getData()
+    handleCloseMenu()
+  };
+
+  const onOpenTambahUser = () => {
+    setOpenTambahUser(true);
+  };
+
+  const onCloseTambahUser = () => {
+    setOpenTambahUser(false);
+  };
+
+  const onCloseView = () => {
+    setOpenView(false);
+  };
+
+  const onCloseEditUser = () => {
+    setOpenEditUser(false);
   };
 
   return (
@@ -303,7 +327,7 @@ export default function UserPage() {
                     return (
                       <TableRow hover key={id} tabIndex={-1} role="checkbox" selected={selectedUser}>
                         <TableCell padding="checkbox">
-                          <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, namaLengkap)} />
+                          {/* <Checkbox checked={selectedUser} onChange={(event) => handleClick(event, namaLengkap)} /> */}
                         </TableCell>
 
                         <TableCell component="th" scope="row" padding="none">
@@ -457,9 +481,86 @@ export default function UserPage() {
             />
           </Box>
 
-          <Button loading={loading} fullWidth size="large" type="submit" variant="contained" onClick={onTambahData}>
+          <LoadingButton loading={loading} loadingPosition="start" variant="contained" fullWidth onClick={onTambahData}>
             Tambah
-          </Button>
+          </LoadingButton>
+        </Box>
+      </Modal>
+
+      {/* Edit User */}
+      <Modal
+        open={openEditUser}
+        onClose={onCloseEditUser}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <Typography id="modal-modal-title" variant="h6" component="h2">
+            Edit Data
+          </Typography>
+          <Box
+            sx={{
+              marginY: 2,
+            }}
+          >
+            <TextField value={val.namaLengkap} name="namaLengkap" label="Nama Lengkap" fullWidth onChange={onChange} />
+            <TextField
+              value={val.jabatan}
+              sx={{ marginTop: 2 }}
+              name="jabatan"
+              label="Jabatan"
+              fullWidth
+              onChange={onChange}
+            />
+            <TextField
+              value={val.alamat}
+              multiline
+              rows={2}
+              maxRows={2}
+              sx={{ marginTop: 2 }}
+              name="alamat"
+              label="Alamat"
+              fullWidth
+              onChange={onChange}
+            />
+            <TextField
+              value={val.noHp}
+              type="number"
+              sx={{ marginTop: 2 }}
+              name="noHp"
+              label="No. Hp"
+              fullWidth
+              onChange={onChange}
+            />
+            <TextField
+              value={val.latitude}
+              sx={{ marginTop: 2 }}
+              name="latitude"
+              label="latitude"
+              fullWidth
+              onChange={onChange}
+            />
+            <TextField
+              value={val.longitude}
+              type="number"
+              sx={{ marginTop: 2 }}
+              name="longitude"
+              label="longitude"
+              fullWidth
+              onChange={onChange}
+            />
+          </Box>
+
+          <LoadingButton
+            loading={loading}
+            loadingPosition="start"
+            fullWidth
+            size="large"
+            variant="contained"
+            onClick={onActionEdit}
+          >
+            Edit
+          </LoadingButton>
         </Box>
       </Modal>
 
@@ -500,12 +601,12 @@ export default function UserPage() {
               marginBottom: 24,
             }}
           />
-          <Button sx={{mb: 2}}>Print QRCode</Button>
+          <Button sx={{ mb: 2 }}>Print QRCode</Button>
           <Box>
-            <Typography variant='body1'>Nama Lengkap: &nbsp;{selectData.namaLengkap}</Typography>
-            <Typography variant='body1'>Jabatan: &nbsp;{selectData.jabatan}</Typography>
-            <Typography variant='body1'>Alamat: &nbsp;{selectData.alamat}</Typography>
-            <Typography variant='body1'>No.Hp: &nbsp;{selectData.noHp}</Typography>
+            <Typography variant="body1">Nama Lengkap: &nbsp;{selectData.namaLengkap}</Typography>
+            <Typography variant="body1">Jabatan: &nbsp;{selectData.jabatan}</Typography>
+            <Typography variant="body1">Alamat: &nbsp;{selectData.alamat}</Typography>
+            <Typography variant="body1">No.Hp: &nbsp;{selectData.noHp}</Typography>
           </Box>
         </Box>
       </Modal>
