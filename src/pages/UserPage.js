@@ -137,7 +137,7 @@ export default function UserPage() {
 
   const ref = useRef();
 
-  const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+  const url = `${window.location.protocol}//${window.location.hostname}`;
 
   useEffect(() => {
     getData();
