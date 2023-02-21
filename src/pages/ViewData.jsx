@@ -26,17 +26,20 @@ const ViewData = () => {
   };
 
   const onLocation = () => {
-    navigator.geolocation.getCurrentPosition(() => (position) => {
-      const lat = position.coords.latitude
-      const long = position.coords.longitude
-      console.log('Latitude is :', lat);
-      console.log('Longitude is :', long);
+    console.log('onLocation');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const long = position.coords.longitude;
 
-      alert(lat)
-
-      window.location.href =
-        `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
-    });
+        console.log(position);
+        
+        window.location.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
+      },
+      (error) => {
+        console.error(`Error Code = ${error.code} - ${error.message}`);
+      }
+    );
   };
 
   return (
