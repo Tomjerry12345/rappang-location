@@ -100,7 +100,7 @@ const styleView = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 600,
+  width: 300,
   bgcolor: 'background.paper',
   border: '2px solid #fff',
   borderRadius: '8px',
@@ -131,6 +131,10 @@ export default function UserPage() {
 
   const [data, setData] = useState([]);
 
+  const [selectData, setSelectData] = useState({});
+
+  const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+
   useEffect(() => {
     getData();
   }, []);
@@ -155,7 +159,9 @@ export default function UserPage() {
     setData(list);
   };
 
-  const handleOpenMenu = (event) => {
+  const handleOpenMenu = (event, row) => {
+    console.log('row', row);
+    setSelectData(row);
     setOpen(event.currentTarget);
   };
 
@@ -250,7 +256,8 @@ export default function UserPage() {
   };
 
   const onEdit = () => {
-    alert('onEdit');
+   
+    alert("onEdit")
   };
 
   const onDelete = () => {
@@ -323,7 +330,7 @@ export default function UserPage() {
                         </TableCell> */}
 
                         <TableCell align="right">
-                          <IconButton size="large" color="inherit" onClick={handleOpenMenu}>
+                          <IconButton size="large" color="inherit" onClick={(e) => handleOpenMenu(e, row)}>
                             <Iconify icon={'eva:more-vertical-fill'} />
                           </IconButton>
                         </TableCell>
@@ -456,6 +463,8 @@ export default function UserPage() {
         </Box>
       </Modal>
 
+      {/* View Data */}
+
       <Modal
         open={openView}
         onClose={onCloseView}
@@ -463,13 +472,17 @@ export default function UserPage() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={styleView} display="flex" justifyContent="center" flexDirection="column" alignItems="center">
-          <Typography id="modal-modal-title" variant="h4" component="h2" sx={{
-            mb: 4
-          }}>
+          <Typography
+            id="modal-modal-title"
+            variant="h3"
+            sx={{
+              mb: 4,
+            }}
+          >
             View Data
           </Typography>
           <QRCodeCanvas
-            value={'https://picturesofpeoplescanningqrcodes.tumblr.com/'}
+            value={`${url}/view-data?id=${selectData.id}`}
             size={128}
             bgColor={'#ffffff'}
             fgColor={'#000000'}
@@ -483,7 +496,17 @@ export default function UserPage() {
               width: 24,
               excavate: true,
             }}
+            style={{
+              marginBottom: 24,
+            }}
           />
+          <Button sx={{mb: 2}}>Print QRCode</Button>
+          <Box>
+            <Typography variant='body1'>Nama Lengkap: &nbsp;{selectData.namaLengkap}</Typography>
+            <Typography variant='body1'>Jabatan: &nbsp;{selectData.jabatan}</Typography>
+            <Typography variant='body1'>Alamat: &nbsp;{selectData.alamat}</Typography>
+            <Typography variant='body1'>No.Hp: &nbsp;{selectData.noHp}</Typography>
+          </Box>
         </Box>
       </Modal>
     </>
