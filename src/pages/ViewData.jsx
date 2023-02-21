@@ -26,8 +26,15 @@ const ViewData = () => {
   };
 
   const onLocation = () => {
-    window.location.href =
-      'https://www.google.com/maps/dir/?api=1&origin=-3.8490344,119.8184561&destination=-3.8482122,119.8187609';
+    navigator.geolocation.getCurrentPosition(() => (position) => {
+      const lat = position.coords.latitude
+      const long = position.coords.longitude
+      console.log('Latitude is :', lat);
+      console.log('Longitude is :', long);
+
+      window.location.href =
+        `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
+    });
   };
 
   return (
