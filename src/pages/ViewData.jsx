@@ -27,19 +27,20 @@ const ViewData = () => {
 
   const onLocation = () => {
     console.log('onLocation');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const long = position.coords.longitude;
+    window.location.href = `https://www.google.com/maps/search/?api=1&query=${data.latitude},${data.longitude}`
+    // navigator.geolocation.getCurrentPosition(
+    //   (position) => {
+    //     const lat = position.coords.latitude;
+    //     const long = position.coords.longitude;
 
-        console.log(position);
+    //     console.log(position);
 
-        window.location.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
-      },
-      (error) => {
-        console.error(`Error Code = ${error.code} - ${error.message}`);
-      }
-    );
+    //     window.location.href = `https://www.google.com/maps/dir/?api=1&origin=${lat},${long}&destination=${data.latitude},${data.longitude}`;
+    //   },
+    //   (error) => {
+    //     console.error(`Error Code = ${error.code} - ${error.message}`);
+    //   }
+    // );
   };
 
   return (
