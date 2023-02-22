@@ -318,7 +318,7 @@ export default function UserPage() {
             User
           </Typography>
           <Button variant="contained" startIcon={<Iconify icon="eva:plus-fill" />} onClick={onOpenTambahUser}>
-            New User
+            Tambah Data
           </Button>
         </Stack>
 
