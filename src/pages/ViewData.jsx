@@ -43,6 +43,10 @@ const ViewData = () => {
     // );
   };
 
+  const onHubungi = () => {
+    window.location.href = `tel: +62${data.noHp}`
+  }
+
   return (
     <Box
       sx={{
@@ -89,7 +93,7 @@ const ViewData = () => {
               justifyContent="space-between"
             >
               <Button onClick={onLocation}>Lihat lokasi</Button>
-              <Button>Hubungi</Button>
+              <Button onClick={onHubungi}>Hubungi</Button>
             </Box>
           </>
         ) : (
