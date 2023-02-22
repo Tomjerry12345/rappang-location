@@ -136,7 +136,7 @@ export default function UserPage() {
   const [selectData, setSelectData] = useState({});
 
   const ref = useRef();
-
+ 
   const url = `${window.location.protocol}//${window.location.hostname}`;
 
   useEffect(() => {
@@ -309,7 +309,7 @@ export default function UserPage() {
   return (
     <>
       <Helmet>
-        <title> User | Minimal UI </title>
+        <title> User </title>
       </Helmet>
 
       <Container>
