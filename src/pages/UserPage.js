@@ -6,6 +6,8 @@ import { addDoc, collection, doc, getDocs, deleteDoc, setDoc } from 'firebase/fi
 import { QRCodeCanvas } from 'qrcode.react';
 import { LoadingButton } from '@mui/lab';
 import { useReactToPrint } from 'react-to-print';
+import 'react-phone-number-input/style.css';
+import PhoneInput from 'react-phone-number-input';
 // @mui
 import {
   Card,
@@ -136,7 +138,7 @@ export default function UserPage() {
   const [selectData, setSelectData] = useState({});
 
   const ref = useRef();
- 
+
   const url = `${window.location.protocol}//${window.location.hostname}`;
 
   useEffect(() => {
@@ -168,11 +170,9 @@ export default function UserPage() {
   });
 
   const downloadQRCode = () => {
-    const canvas = document.getElementById("qr-gen");
-    const pngUrl = canvas
-      .toDataURL("image/png")
-      .replace("image/png", "image/octet-stream");
-    const downloadLink = document.createElement("a");
+    const canvas = document.getElementById('qr-gen');
+    const pngUrl = canvas.toDataURL('image/png').replace('image/png', 'image/octet-stream');
+    const downloadLink = document.createElement('a');
     downloadLink.href = pngUrl;
     downloadLink.download = `test.png`;
     document.body.appendChild(downloadLink);
@@ -256,6 +256,7 @@ export default function UserPage() {
   const onTambahData = async () => {
     setLoading(true);
     console.log('val', val);
+    val.noHp = `+62${val.noHp}`
     await addDoc(collection(db, 'users'), val);
     setLoading(false);
     getData();
@@ -487,8 +488,20 @@ export default function UserPage() {
               fullWidth
               onChange={onChange}
             />
-            <TextField type="number" sx={{ marginTop: 2 }} name="noHp" label="No. Hp" fullWidth onChange={onChange} />
-            <TextField sx={{ marginTop: 2 }} name="latitude" label="latitude" fullWidth onChange={onChange} />
+
+            <Box display="flex" sx={{ marginTop: 2 }}>
+              <TextField name="noHp" label="+62" disabled sx={{width: 72, marginRight: 2}}/>
+              <TextField type="number"  name="noHp" label="No. Hp" fullWidth onChange={onChange} />
+            </Box>
+
+            <TextField
+              type="number"
+              sx={{ marginTop: 2 }}
+              name="latitude"
+              label="latitude"
+              fullWidth
+              onChange={onChange}
+            />
             <TextField
               type="number"
               sx={{ marginTop: 2 }}
